@@ -1,0 +1,85 @@
+// Jacoco guide: https://reflectoring.io/jacoco/
+plugins {
+	id 'org.springframework.boot' version '2.5.0'
+	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+	id 'java'
+	id 'org.springframework.experimental.aot' version '0.10.0-SNAPSHOT'
+    id 'jacoco'
+}
+
+group = 'com.soft'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+repositories {
+	maven { url 'https://repo.spring.io/snapshot' }
+	mavenCentral()
+}
+
+dependencies {
+	// web and start up
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-tomcat', version: '1.2.1.RELEASE'
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-web-services', version: '2.4.6'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	// databases
+	implementation group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version: '2.4.6'
+	implementation group: 'org.postgresql', name: 'postgresql', version: '42.1.4'
+	runtimeOnly 'org.postgresql:postgresql'
+	implementation group: 'org.hibernate', name: 'hibernate-gradle-plugin', version: '5.4.31.Final'
+	// web sockets
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+	implementation 'org.webjars:webjars-locator-core'
+	implementation 'org.webjars:sockjs-client:1.0.2'
+	implementation 'org.webjars:stomp-websocket:2.3.3'
+	implementation 'org.webjars:bootstrap:3.3.7'
+	implementation 'org.webjars:jquery:3.1.1-1'
+}
+
+test {
+    finalizedBy jacocoTestReport // report is always generated after tests run
+}
+jacocoTestReport {
+    dependsOn test // tests are required to run before generating the report
+}
+
+jacoco {
+	toolVersion = "0.8.6"
+	reportsDirectory = layout.buildDirectory.dir('customJacocoReportDir')
+}
+
+test {
+	useJUnitPlatform()
+}
+
+jacocoTestReport {
+	reports {
+		xml.enabled false
+		csv.enabled false
+		html.destination layout.buildDirectory.dir('jacocoHtml').get().asFile
+	}
+}
+
+//The following rule enforces 100% line coverage on all classes except the excluded ones
+jacocoTestCoverageVerification {
+	violationRules {
+		rule {
+			element = 'CLASS'
+			limit {
+				counter = 'LINE'
+				value = 'COVEREDRATIO'
+				minimum = 1.0
+			}
+			excludes = [
+					'io.reflectoring.coverage.part.PartlyCovered',
+					'io.reflectoring.coverage.ignored.*',
+					'io.reflectoring.coverage.part.NotCovered'
+			]
+		}
+	}
+}
+
+bootBuildImage {
+	builder = 'paketobuildpacks/builder:tiny'
+	environment = ['BP_NATIVE_IMAGE': 'true']
+}
